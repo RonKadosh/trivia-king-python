@@ -2,23 +2,27 @@ import socket
 import time
 import ipaddress
 import threading
+import struct
 
 server_name = 'PokemonTriviaKingByRonKaAndGalHa'
 port = 13117
+
+def log(src, msg):
+    print(time.strftime('[%d/%m/%Y - %H:%M:%S]') + ' ' + src + " :: " + msg) 
 
 class Server:
     def __init__(self):
         #initializing fields
         self._connections = dict()
         self._state = "waiting_for_clients"
-
         self._host = socket.gethostbyname(socket.gethostname())
         
         #initializing the TCP socket
         self._tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._tcp_sock.bind((self._host, 0))
         self._port = self._tcp_sock.getsockname()[1]
-        print(self._port)
+        self._tcp_sock.listen()
+        log("SERVER", "Starting and now is ready for incoming connections on: " + str(self._tcp_sock.getsockname()))
     
     def broadcast_offers(self):
         '''The function broadcasts offer messages to join the server'''
@@ -31,12 +35,13 @@ class Server:
         offer = 0x2
 
         #broadcast message formatting
-        to_broadcast = magic_cookie.to_bytes(4,'big')+offer.to_bytes(1,'big')+server_name.encode()+self._port.to_bytes(2,"big")
+        pack_format = '>Ih32sH'
+        to_broadcast = struct.pack(pack_format, 0xabcddcba, 0x2, server_name.encode(), self._port)
 
         #broadcast loop - the loop works until the server state changes
         while self._state == "waiting_for_clients":
             broadcaster.sendto(to_broadcast,(broadcast_address,port))
-            print("Server UDP broadcast: " + str(to_broadcast))
+            log("SERVER", "Broadcasting on UDP: " + str(to_broadcast))
             time.sleep(1)
 
         
@@ -47,17 +52,17 @@ class Server:
         broadcast_thread = threading.Thread(group=None, target=self.broadcast_offers, name=None, args=(), kwargs={}, daemon=None)
         broadcast_thread.start()
 
-        #handle incoming connections, timing out the while loop after 10 seconds without new connection
-        print("Server started, listening on IP address " + self._host + " for incoming connections...")      
+        #handle incoming connections, timing out the while loop after 10 seconds without new connection     
         while self._state == "waiting_for_clients":
             self._tcp_sock.settimeout(10)
             try:
-                conn = self._tcp_sock.accept()
-                print("here")
+                conn = self._tcp_sock.accept()               
             except socket.timeout:
                 break
             self._connections[len(self._connections)] = conn
-            print(len(self._connections))
+            
+            log("SERVER", "New client connected: " + str(conn[1]))
+            print(str(conn[0].recv(1)))
         
         #no new connections in the last 10 seconds, starting game mode
         self._state = "game_mode"
