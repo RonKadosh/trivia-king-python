@@ -119,7 +119,7 @@ class GameManager:
         for id in self._active_players_ids:
             self._players[id].prep_to_next_round()
             ret += "Player " + str(self._players[id].get_player_num()) + ": " + self._players[id].get_name() + "\n"
-        return ret + bcolors.OKCYAN + "=======" + bcolors.ENDC
+        return ret + bcolors.OKCYAN + "=======" + bcolors.ENDC + "\n"
     
     def choose_question(self):
         '''The function chooses and returns this round statement as a string formatted: 

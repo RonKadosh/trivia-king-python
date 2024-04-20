@@ -195,6 +195,7 @@ class Server:
          
     def reset(self):
         '''The functions resets the server: closing the open connections and readies the server for another round.'''
+        time.sleep(sec)
         for conn in self._connections.values():
             conn.close()
         Logger.log(threading.current_thread().getName(), "Game over, sending out offer requests...")
